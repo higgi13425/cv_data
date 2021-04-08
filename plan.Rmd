@@ -1,0 +1,151 @@
+---
+title: "plan"
+author: "Peter Higgins"
+date: "3/27/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(googlesheets4)
+library(scholar)
+```
+
+## Plan for a Data-Driven CV
+
+The goal of this project is to reproducibly produce a cv from googlesheets, using the datadrivencv package from Nick Strayer. This is installed with
+
+    devtools::install_github("nstrayer/datadrivencv")
+
+It depends on the icons package, which was renamed from icon, so you may need to hack around this with
+
+`remotes::install_github('mitchelloharawild/icons@v0.1.0')`
+
+which installs the previous version. Then you can install `datadrivencv`
+
+But then we have to accumulate the data to create the CV.
+
+Sections of the cv include:
+
+1.  header details
+
+2.  table of contents
+
+3.  Education and Training
+
+4.  Certification and Licensure
+
+5.  Academic, Administrative, and Clinical Appointments
+
+6.  Research Interests
+
+7.  Grants (check - 3 R scripts)
+
+    1.  Present Grants - M-CV (check)
+
+    2.  Submitted Grants - M-CV (check)
+
+    3.  Past Grants - M-CV (check)
+
+8.  Total Grant Funding table
+
+9.  Honors and Awards
+
+10. Memberships in Professional Societies
+
+11. Editorial Positions, Boards, and Peer-Review Service
+
+12. Teaching
+
+13. Committee, Organizational, and Volunteer Service
+
+14. Consulting Positions
+
+15. Visiting Professorships, Seminars, and Extramural Invited Presentations
+
+16. Patents (check - in Google Scholar Bibliograpby)
+
+17. Bibliography
+
+    1.  Peer Reviewed Publications - Google Scholar (check)
+
+    2.  Non-Peer Reviewed Publications (work on this)
+
+    3.  Book Chapters (check)
+
+    4.  Other Media (work on this)
+
+    5.  Meeting Abstracts - Google Scholar (check)
+
+## Building A Bibliography with Google Sheets
+
+This requires the `scholar` package to pull the publications from Google Scholar. Unfortunately, this pulls all publications, including meeting abstracts, which need to be sorted out separately.
+
+Let's start with the scholar id. We need to find this first. This is in the URL link (at far right) of the google scholar page for the person you are building a cv for.
+
+```{r}
+# this is my scholar id
+scholar_id <- "UGJGFaAAAAAJ"
+```
+
+Now pull in the publications
+
+```{r}
+pubs <- get_publications(id = scholar_id) %>% 
+  arrange(year, cites)
+```
+
+Now to sort out other stuff.
+
+1.  Remove garbage that is not by me
+2.  Separate out patents
+3.  Separate out Abstracts to a different sheet
+4.  Write out manuscripts to their own sheet.
+
+```{r}
+junk <- c("Y0-TYkg6YM4C", "9NZAP19TdFAC", "XvxMoLDsR5gC", "Azgs6IHzeyYC", "qmtmRrLr0tkC", "BAanoTsO0WEC","ZuybSZzF8UAC", "_xSYboBqXhAC", "cWzG1nlazyYC", "WqliGbK-hY8C", "O3NaXMp0MMsC", "cFHS6HbyZ2cC", "Og1tA8FjbJAC", "1sJd4Hv_s6UC", "CCeGMaHljPEC", "69ZgNCALVd0C", "J_g5lzvAfSwC", "3bvyWxjaHKcC", "FiDNX6EVdGUC", "cSdaV2aYdYsC", "3BvdIg-l-ZAC", "8p8iYwVyaVcC", "zdX0sdgBH_kC", "c1AJUTjuCtUC",  "uUvzmPk0f8oC", "iyewoVqAXLQC", "LGlY6t8CeOMC", "X9ykpCP0fEIC", "k_7cPK9k7w8C", "wvYxNZNCP7wC", "SGW5VrABaM0C", "CdxZDUztZiMC", 
+"buQ7SEKw-1sC", "WJVC3Jt7v1AC", "8d8msizDQcsC", "TIZ-Mc8IlK0C", "VL0QpB8kHFEC")
+
+abstract <- c("mvPsJ3kp5DgC", "dTyEYWd-f8wC", "XiVPGOgt02cC", "1qzjygNMrQYC", "bnK-pcrLprsC", "	
+wbdj-CoPYUoC", "wbdj-CoPYUoC", "4X0JR2_MtJMC", "PELIpwtuRlgC", "tkaPQYYpVKoC", "Y5dfb0dijaUC", "maZDTaKrznsC", "hkOj_22Ku90C",  "olpn-zPbct0C", "p2g8aNsByqUC", "ybfzIt2tCtgC", "Mojj43d5GZwC", "t6usbXjVLHcC", "V3AGJWp-ZtQC", "kRWSkSYxWN8C", "l7t_Zn2s7bgC", "dQ2og3OwTAUC", "z_wVstp3MssC", "u9iWguZQMMsC", "XiSMed-E-HIC", "RuPIJ_LgqDgC", "Bg7qf7VwUHIC", "b0M2c_1WBrUC", "ZHo1McVdvXMC", "JV2RwH3_ST0C", "TQgYirikUcIC", "qE4H1tSSYIIC", "1r-w4gtu6w8C", "xGWFX6Gbr9MC", "NxmKEeNBbOMC", "eAlLMO4JVmQC", "JQOojiI6XY0C",
+"WbkHhVStYXYC", "vRqMK49ujn8C", "tOudhMTPpwUC", "K3LRdlH-MEoC", "fPk4N6BV_jEC", "k_IJM867U9cC", "RGFaLdJalmkC", "4JMBOYKVnBMC", "j3f4tGmQtD8C", "R3hNpaxXUhUC", "IWHjjKOFINEC", "hFOr9nPyWt4C", "eGYfIraVYiQC", "pqnbT2bcN3wC", "NaGl4SEjCO4C", "hMod-77fHWUC", "bFI3QPDXJZMC", "a0OBvERweLwC", "70eg2SAEIzsC", "5awf1xo2G04C", "SeFeTyx0c_EC", "pyW8ca7W8N0C", "zA6iFVUQeVQC", "lSLTfruPkqcC", "NXb4pA-qfm4C", "abG-DnoFyZgC", "RYcK_YlVTxYC", "0ngZmJvimKcC", "rOcdG6UcVlcC", "nPT8s1NX_-sC", "lK9BDNCuzFgC", "wkm4DBaukwsC",
+"AXPGKjj_ei8C", "u_35RYKgDlwC", "g5m5HwL7SMYC", "rO6llkc54NcC", "_Qo2XoVZTnwC", "CHSYGLWDkRkC", "-_dYPAW6P2MC", "q3oQSFYPqjQC", "BrmTIyaxlBUC", "eflP2zaiRacC", "D_sINldO8mEC", "eJXPG6dFmWUC", "mel-f30kHHgC", "FAceZFleit8C", "_FM0Bhl9EiAC", "0N-VGjzr574C", "rCNdntzdTkkC", "M7yex6snE4oC", "q1zXlPLtbUIC", "hMsQuOkrut0C", "4MWp96NkSFoC", "Z5m8FVwuT1cC", "EkHepimYqZsC", "kuK5TVdYjLIC", "ILKRHgRFtOwC", "L7CI7m0gUJcC", "URolC5Kub84C", "vbGhcppDl1QC", "p__nRnzSRKYC", "YohjEiUPhakC", "EYYDruWGBe4C", "ML0RJ9NH7IQC", "zLWjf1WUPmwC", "zLWjf1WUPmwC", "BwyfMAYsbu0C", "n3vGvpFsckwC", "9DLIHnF0jcYC", "nPTYJWkExTIC", "L1USKYWJimsC", "yqoGN6RLRZoC", "r_AWSJRzSzQC", "HeT0ZceujKMC", "fFSKOagxvKUC", "3htObqc8RwsC", "OcBU2YAGkTUC", "ODE9OILHJdcC", "DUooU5lO8OsC", "-6RzNnnwWf8C", "-6RzNnnwWf8C", "yMeIxYmEMEAC", "KbBQZpvPDL4C", "DUooU5lO8OsC", "yFnVuubrUp4C", "jE2MZjpN3IcC", "AXkvAH5U_nMC", "Ade32sEp0pkC", "7Hz3ACDFbsoC", "LdasjJ6CEcoC", "cK4Rrx0J3m0C", "v1_lew4L6wgC", "U4n9YNQMCAIC", "BzfGm06jWhQC", "zCSUwVk65WsC", "ubry08Y2EpUC", "1lhNe0rCu4AC", "ALROH1vI_8AC", "lgwcVrK6X84C", "otzGkya1bYkC", "WC23djZS0W4C", "cBPnxVikjH8C", "KNjnJ3z-R6IC", "uVUOdF_882EC", "O0nohqN1r9EC", "RtRctb2lSbAC", "kVjdVfd2voEC", "wKETBy42zhYC", "7H_MAutzIkAC", "uDGL6kOW6j0C", "43bX7VzcjpAC", "-DxkuPiZhfEC", "TaaCk18tZOkC", "SIv7DqKytYAC", "z8nqeaKD1nsC", "DkZNVXde3BIC", "rTD5ala9j4wC", "pS0ncopqnHgC", "eO3_k5sD8BwC", "2l5NCbZemmgC", "An6A6Jpfc1oC", "BrOSOlqYqPUC", "kzcSZmkxUKAC", "WAzi4Gm8nLoC", "ce2CqMG-AY4C", "EPG8bYD4jVwC", "raTqNPD5sRQC", "mKu_rENv82IC",
+"5bg8sr1QxYwC", "kF1pexMAQbMC", "YsrPvlHIBpEC", "ziOE8S1-AIUC", "mUJArPsKIAAC", "65Yg0jNCQDAC", "v_tt_AnqfNMC", "kWvqk_afx_IC", "RoXSNcbkSzsC", "sszUF3NjhM4C", "KWzIFqRkAKkC", "-uzm3Y7AvW0C", "JP7YXuLIOvAC", "ZqE1mSdD_DYC", "NMlhSUseqAsC", "AzKEL7Gb_04C", 
+"CNPyR2KL9-0C", "zwpXiJ37cpgC", "unp9ATQDT5gC", "A8cqit5AE6sC", "L_l9e5I586QC", "__bU50VfleQC", "YlPif8NxrbYC", "C33y2ycGS3YC", 
+"RJOyoaXV5v8C", "2ywjKiB__4kC", "H_jBuBxbQIAC", "AYInfyleIOsC", "kJDgFkosVoMC", "6VlyvFCUEfcC", "yJjnfzR0HrkC", "bXQfdp6S9ecC", 
+"oursBaop5wYC", "RfUwGJFMQ-0C", "QaSi33NTfwYC", "yIeBiWEAh44C", "60iIaj97TE0C", "0sTkTiv_uMkC", "xyvS_IvSCKsC", "KI9T_ytC6pkC",
+"TGkaJS32XoUC", "J3LtWjKFLicC", "3A3nxV7CjKIC", "g8uWPOAv7ggC", "_tF6a-HnqWAC", "QsKbpXNoaWkC", "DXE8ND7PrJAC", "vVJNg6_NJEsC", 
+"3lUAU8Oskd0C", "PuOEWVtPfzwC", "8uzoZH4hB9AC", "Vr2j17o0sqMC", "WwIwg2wKZ0QC", "vnF2_uLGgtgC", "BJtnxTr0fRcC", "eH23hyXCXa4C", "XDrR66g3YHsC", "6ZzL7HXColQC", "8RAEygVn5_EC", "pUxgyZctzPYC", "NtGNdKbuCngC", "1EqfMoDn7-AC", "a2necdfpwlEC", "eFf2swCANGcC",
+"17ZO-CJnx_8C", "inmFHauC9wsC", "nWoA1JPTheMC", "hfzGNhXhx5MC", "eAUscmXIlQ8C")
+
+paper <- c("C-Rn0OCouf8C", "dhFuZR0502QC", "4TOpqqG69KYC", "_B80troHkn4C", "oTdOBqtIf_kC", "Wp0gIr-vW9MC", "UebtZRa9Y70C", "iH-uZ7U-co4C", "Zph67rFs4hoC", "HDshCWvjkbEC", "_kc_bZDykSQC", "nb7KW1ujOQ8C", "KxtntwgDAa4C", "9yKSN-GCB0IC", "u5HHmVD_uO8C", "9yKSN-GCB0IC", "kNdYIx-mwKoC", "UeHWp8X0CEIC", "Tyk-4Ss8FVUC", "d1gkVwhDpl0C", "u-x6o8ySG0sC", "2osOgNQ5qMEC", "roLk4NBRz8UC", "W7OEmFMy1HYC", "4fKUyHm3Qg0C", "3fE2CSJIrl8C", "MXK_kJrjxJIC", "_FxGoFyzp5QC", "wyM6WWKXmoIC", "Se3iqnhoufwC", "qjMakFHDy7sC", "D03iK_w7-QYC", "L8Ckcad2t8MC", "7PzlFSSx8tAC", "5nxA0vEk-isC", "ufrVoPGSRksC", "4DMP91E08xMC", "hqOjcs7Dif8C", "LkGwnXOMwfcC", "YsMSGLbcyi4C", "zYLM7Y9cAGgC", "nZcligLrVowC", "GtLg2Ama23sC", "5ugPr518TE4C", "rbm3iO8VlycC", "mVmsd5A6BfQC", "HoB7MX3m0LUC", "aqlVkmm33-oC", "hC7cP41nSMkC", "qxL8FJ1GzNcC", "bEWYMUwI8FkC", "YOwf2qJgpHMC", "WF5omc3nYNoC", "eQOLeE2rZwMC", "Y0pCki6q_DkC", "P5F9QuxV20EC",  "-nhnvRiOwuoC", "r0BpntZqJG4C", "35N4QoGY0k4C", "mB3voiENLucC", "RHpTSmoSYBkC", "9ZlFYXVOiuMC", "8k81kl-MbHgC", "e5wmG9Sq2KIC", "HJSXoJQnj-YC", "SAZ1SQo2q1kC", "pYKElYtJMmwC", "tHtfpZlB6tUC", "Zh0EY9V9P6UC", "Hck25ST_3aIC", "yeL6HyUMUGUC", "ZeXyd9-uunAC",
+"ULOm3_A8WrAC", "M3ejUd6NZC8C", "KlAtU1dfN6UC", "IjCSPb-OGe4C", "B3FOqHPlNUQC", "ns9cj8rnVeAC", "NMxIlDl6LWMC", "3s1wT3WcHBgC", "NhqRSupF_l8C", "xtRiw3GOFMkC", "GnPB-g6toBAC", "ldfaerwXgEUC", "dshw04ExmUIC", "UxriW0iASnsC", "-f6ydRqryjwC", "OU6Ihb5iCvQC",
+"QIV2ME_5wuYC", "t7zJ5fGR-2UC", "qUcmZB5y_30C", "0EnyYjriUFMC", "SP6oXDckpogC", "35r97b3x0nAC", "uLbwQdceFCQC", "5Ul4iDaHHb8C", "LPZeul_q3PIC", "geHnlv5EZngC", "7T2F9Uy0os0C", "VOx2b1Wkg3QC", "08ZZubdj9fEC", "tzM49s52ZIMC", "_Ybze24A_UAC", "oNZyr7d5Mn4C", "YohjEiUPhakC", "oNZyr7d5Mn4C", "Fu2w8maKXqMC", "epqYDVWIO7EC", "kzcrU_BdoSEC", "uWiczbcajpAC", "XoXfffV-tXoC", "j8SEvjWlNXcC", "evX43VCCuoAC", "9vf0nzSNQJEC", "0KyAp5RtaNEC", "BUYA1_V_uYcC", "uJ-U7cs_P_0C", "DyXnQzXoVgIC", "HIFyuExEbWQC", "umqufdRvDiIC", "s9ia6_kGH2AC", "ZzlSgRqYykMC", "FPJr55Dyh1AC", "nVrZBo8bIpAC", "b1wdh0AR-JQC", "0izLItjtcgwC", "HbR8gkJAVGIC", "IRz6iEL74y4C", "OTTXONDVkokC", "WZBGuue-350C", "Ug5p-4gJ2f0C", "edDO8Oi4QzsC", "LO7wyVUgiFcC", "9c2xU6iGI7YC", "5icHVeHT4IsC", "foquWX3nUaYC", "-mN3Mh-tlDkC", "j7_hQOaDUrUC", "IaI1MmNe2tcC", "jgBuDB5drN8C", "CB2v5VPnA5kC", "prdVHNxh-e8C", "MpfHP-DdYjUC", "artPoR2Yc-kC", "owLR8QvbtFgC", "FiytvqdAVhgC", "4xDN1ZYqzskC", "0CzhzZyukY4C", "wE-fMHVdjMkC", "-DxkuPiZhfEC", "wMgC3FpKEyYC", "DBa1UEJaJKAC", 
+"jU7OWUQzBzMC", "silx2ntsSuwC", "KaMxkj08jr0C", "PyEswDtIyv0C", "NDuN12AVoxsC", "UmS_249rOGwC", "Br1UauaknNIC", "zGdJYJv2LkUC", 
+"TlpoogIpr_IC", "1DsIQWDZLl8C", "jFemdcug13IC", "1yWc8FF-_SYC", "HhcuHIWmDEUC", "U_HPUtbDl20C", "xm0LlTxljI0C", "EsEWqaRxkBgC",
+"zdjWy_NXXwUC", "isU91gLudPYC", "8dzOF9BpDQoC", "c1e4I3QdEKYC", "Wq2b2clWBLsC", "hSRAE-fF4OAC", "T_ojBgVMvoEC", "-yGd096yOn8C", 
+"CYCckWUYoCcC", "BJrgspguQaEC", "ghEM2AJqZyQC", "2v_ZtQDX9iAC", "D_tqNUsBuKoC", "MDX3w3dAD3YC", "VRfTbSk87rEC", "8VtEwCQfWZkC",
+"as0KMg8qHbkC", "PVqtIyvKoSUC", "kUhpeDhEZMUC", "I858iXPj1OkC", "aDl3D7KC1E4C", "orDZ08hpP44C", "ifOnle78iJkC", "q0uBw5dMOAkC", 
+"PQEM9vzQD9gC", "adHtZc2wMuEC", "2vr6o8x5NLkC", "x21FZCSn4ZoC", "JH5k92_tO-AC", "eI34FqJmdUoC", "natZJ_-F0IUC", "OzeSX8-yOCQC", "j8pvxH-kN2QC", "zzCxg_vo7cAC", "cB__R-XWw9UC", "G36d5HCDkJYC", "LWqeokA2EBkC", "ojlX30-wUrgC", "S2WlVNSe3u4C", "Nw_I7GeUguwC", "IT1MJ6E3JesC", "Tfl4UtY-dJUC", "AFmTUeZ1pmEC", "sgsej9ZJWHMC", "sbeIDTyQOFgC", "SpPTWFSNUtQC", "sJK75vZXtG0C", "ujxm2eEBZHIC",
+"CMvovTBb2okC", "wBLCggQE-ToC", "T8_be82Iz5gC", "Gpwnp1kGG20C", "NU-BerS4NX4C", "WIXB4To3Tx4C", "urP0JZOBBUsC", "oAywNP-vUhwC",
+"B2rIPIGFPLEC", "MGPUR4WVBMEC", "wGzT3bKASkAC", "pRWBApOjXDcC", "BPS1z4jHU5cC")
+
+patent <- c("ndLnGcHYRF0C", "isC4tDSrTZIC", "4vMrXwiscB8C", "foquWX3nUaYC")
+
+chapter <- c("AHdEip9mkN0C", "vV6vV6tmYwMC", "lYAcb2jw7qUC", "lg2tdxc6qMwC", "u3T1itk59dMC")
+
+letter <- c("yD5IFk8b50cC", "vDZJ-YLwNdEC", "YB4bud6kWLwC", "gVv57TyPmFsC", "QsaTk4IG4EwC")
+
+repository_paper <- c("hHIA4WEVY-EC", "E7VqQtBCVmcC", "M_lZXyI38BkC", "oldoQiaHq2UC", "nU66GSXDKhoC")
+
+pubs %>% 
+  mutate(type = case_when(pubid %in% junk ~ "junk",
+                pubid %in% abstract ~ "abstract",
+                pubid %in% paper ~ "paper",
+                pubid %in% letter ~ "letter",
+                pubid %in% chapter ~ "chapter",
+                pubid %in% repository_paper ~ "repository_paper",
+                pubid %in% patent ~ "patent")) ->
+pubs
+```
